@@ -1,0 +1,233 @@
+# Make sure to use PiHole Settings->Teleporter for backup first
+
+# Raspberry pi Imager
+mount
+touch ssh
+
+ssh pi@192.168.1.xxx
+# Default password is 'raspberry'
+ssh pi@192.168.1.xxx mkdir .ssh
+cat .\.ssh\id_rsa.pub | ssh pi@192.168.1.xxx 'cat >> .ssh/authorized_keys'
+
+sudo raspi-config
+system -> hostname
+reboot
+localisation options->timezone
+
+# Pihole install
+curl -sSL https://install.pi-hole.net | bash
+
+# Remove Pihole passwd
+sudo pihole setpassword
+
+# Use PiHole Settings->Teleporter to restore if needed
+
+# Uncomment cron from rsyslog.conf
+sudo vi /etc/rsyslog.conf
+
+# Cron
+0 2 * * * sudo apt update
+0 3 * * * sudo apt-get -y full-upgrade
+0 4 * * * sudo init 6
+0 5 * * * PATH="$PATH:/usr/sbin:/usr/local/bin/" pihole -up
+
+0 1 * * Mon sudo apt update
+0 2 * * Mon sudo apt-get -y full-upgrade
+0 3 * * Mon sudo init 6
+0 4 * * Mon sudo pihole -up
+0 5 * * Mon sudo pihole -g
+
+# Setting up SNMP
+
+sudo apt install snmp snmpd libsnmp-dev -y
+sudo systemctl enable snmpd
+# add IP to agentaddress in /etc/snmp/snmpd.conf
+# agentaddress  127.0.0.1,[::1],192.168.1.XXX
+sudo service snmpd stop
+sudo net-snmp-config --create-snmpv3-user -ro -A snmpauthpwd -X snmpprivpwd -a SHA -x AES snmpuser
+sudo service snmpd start
+
+sudo apt update
+sudo apt full-upgrade
+sudo init 6
+
+# Not needed by good to know
+# Nord SmartDNS servers
+# Primary: 103.86.96.103 
+# Secondary (if available): 103.86.99.103
+
+# Regular DNS
+# 103.86.96.100 
+# 103.86.99.100
+
+# Not really needed
+curl -L https://install.pivpn.io | bash
+sudo pivpn add
+
+# Various packages for various things
+
+sudo pip3 install feedparser
+sudo pip3 install python-dateutil
+sudo pip3 install pandas
+
+sudo apt-get install exfat-fuse
+sudo apt-get install exfat-utils
+sudo apt-get install mailutils 
+
+sudo apt-get install samba samba-common-bin
+mkdir ~/share
+sudo vi /etc/samba/smb.conf
+
+workgroup = WORKGROUP
+wins support = yes
+
+[PiShare]
+ comment=Raspberry Pi Share
+ path=/home/pi/share
+ browseable=Yes
+ writeable=Yes
+ only guest=no
+ create mask=0777
+ directory mask=0777
+ public=no
+
+# public=yes (no login)
+
+# Not sure here...
+sudo service samba-ad-dc start
+# This work
+sudo service smbd restart
+
+sudo smbpasswd -a pi
+
+
+# Seti at home setup - Seti is suspended
+# join another Boinc project
+sudo apt-get install boinc-client
+# Stick account info in here
+
+# Add pi user to boinc group
+sudo chmod g+r /var/lib/boinc-client/gui_rpc_auth.cfg
+sudo usermod -a -G boinc pi
+exec su pi
+boincmgr -d /var/lib/boinc-client
+# Just use the damn gui
+
+sudo service boinc-client start
+
+#  Not sure any of this is needed anymore...
+
+Manual DNS (will update resolv.conf)
+sudo nano /etc/dhcpcd.conf
+static domain_name_servers=8.8.4.4 8.8.8.8
+
+Google
+8.8.4.4 8.8.8.8
+Cloudflare
+1.1.1.1 1.0.0.1
+OpenDNS/Cisco
+208.67.222.222 208.67.220.220
+DNS.Watch
+84.200.69.80 84.200.70.40
+
+sudo service dhcpcd restart
+
+# This should be done via the Pihole teleporter
+
+https://github.com/mmotti/pihole-regex/blob/master/regex.list
+
+# Regex Blocks
+^ad([sxv]?[0-9]*|system)[_.-]([^.[:space:]]+\.){1,}|^.+[_.-]ad([sxv]?[0-9]*|system)[_.-]
+^(.+[_.-])?adse?rv(er?|ice)?s?[0-9]*[_.-]
+^(.+[_.-])?telemetry[_.-]
+^adim(age|g)s?[0-9]*[_.-]
+^adtrack(er|ing)?[0-9]*[_.-]
+^advert(s|is(ing|ements?))?[0-9]*[_.-]
+^aff(iliat(es?|ion))?[_.-]
+^analytics?[_.-]
+^banners?[_.-]
+^beacons?[0-9]*[_.-]
+^count(ers?)?[0-9]*[_.-]
+^mads\.
+^pixels?[-.]
+^stat(s|istics)?[0-9]*[_.-]
+^track(ing)?[0-9]*[_.-]
+
+
+https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts 	
+https://mirror1.malwaredomains.com/files/justdomains 
+http://sysctl.org/cameleon/hosts 	
+https://zeustracker.abuse.ch/blocklist.php?download=domainblocklist 	
+https://s3.amazonaws.com/lists.disconnect.me/simple_tracking.txt 	
+https://s3.amazonaws.com/lists.disconnect.me/simple_ad.txt 	
+https://hosts-file.net/ad_servers.txt 	
+https://raw.githubusercontent.com/CHEF-KOCH/Audio-fingerprint-pages/master/AudioFp.txt 	
+https://raw.githubusercontent.com/CHEF-KOCH/BarbBlock-filter-list/master/HOSTS.txt 	
+https://raw.githubusercontent.com/CHEF-KOCH/Canvas-fingerprinting-pages/master/Canvas.txt 	
+https://raw.githubusercontent.com/CHEF-KOCH/Canvas-Font-Fingerprinting-pages/master/Canvas.txt 	
+https://raw.githubusercontent.com/CHEF-KOCH/WebRTC-tracking/master/WebRTC.txt 	
+https://raw.githubusercontent.com/CHEF-KOCH/CKs-FilterList/master/HOSTS/Ads-tracker.txt 	
+https://raw.githubusercontent.com/CHEF-KOCH/CKs-FilterList/master/HOSTS/coinminer.txt 	
+https://raw.githubusercontent.com/CHEF-KOCH/CKs-FilterList/master/HOSTS/Malware.txt 	
+https://raw.githubusercontent.com/CHEF-KOCH/CKs-FilterList/master/filters/nsablocklist.txt
+https://raw.githubusercontent.com/CHEF-KOCH/CKs-FilterList/master/uMatrix/CK's-uMatrix-FilterList.txt 	
+http://phishing.mailscanner.info/phishing.bad.sites.conf 	
+https://ransomwaretracker.abuse.ch/downloads/RW_DOMBL.txt 
+https://ransomwaretracker.abuse.ch/downloads/CW_C2_DOMBL.txt 	
+https://ransomwaretracker.abuse.ch/downloads/LY_C2_DOMBL.txt 	
+https://ransomwaretracker.abuse.ch/downloads/TC_C2_DOMBL.txt 	
+https://ransomwaretracker.abuse.ch/downloads/TL_C2_DOMBL.txt 	
+https://gitlab.com/quidsup/notrack-blocklists/raw/master/notrack-blocklist.txt
+https://gitlab.com/quidsup/notrack-blocklists/raw/master/notrack-malware.txt 	
+https://zerodot1.gitlab.io/CoinBlockerLists/list.txt
+https://zerodot1.gitlab.io/CoinBlockerLists/list_browser.txt
+https://zerodot1.gitlab.io/CoinBlockerLists/list_optional.txt 	
+https://raw.githubusercontent.com/crazy-max/WindowsSpyBlocker/master/data/hosts/spy.txt
+https://raw.githubusercontent.com/w13d/adblockListABP-PiHole/master/Spotify.txt 	
+https://smokingwheels.github.io/Pi-hole/allhosts
+
+Splunk:
+
+Get the 32 bit ARM version
+
+wget -O splunkforwarder-8.1.3-63079c59e632-Linux-arm.tgz 'https://www.splunk.com/bin/splunk/DownloadActivityServlet?architecture=ARMv6&platform=linux&version=8.1.3&product=universalforwarder&filename=splunkforwarder-8.1.3-63079c59e632-Linux-arm.tgz&wget=true'
+
+    sudo useradd -m splunk
+    sudo groupadd splunk (the group may be created already)
+    sudo chown -R splunk:splunk /opt/splunkforwarder/
+    sudo -H -u splunk /opt/splunkforwarder/bin/splunk start
+    configure to run at boot
+    sudo /opt/splunkforwarder/bin/splunk enable boot-start -user splunk
+
+splunk set deploy-poll <IP_address/hostname>:<management_port>
+default port 8089
+
+or 
+
+Configure the Universal Forwarder
+
+    since splunk now runs as the splunk id, change to that id and change to the splunk directory
+    sudo su – splunk
+    cd /opt/splunkforwarder/bin
+    set the admin password to something unique (the default is “changeme”)
+    ./splunk edit user admin -password <new password> -role admin -auth admin:changeme
+    set the forwarder to forward (use your new password)
+    ./splunk add forward-server <host>:<port> -auth admin:<password>
+	default index port 9997
+
+    set what to monitor and forward
+    ./splunk add monitor /var/log/
+
+Log into your Splunk instance and check out your logs!
+
+    If you have problems, check out this troubleshooting page: Troubleshooting Forwarding
+    Validate the approach works by shutting down your core Splunk.  Notice that the next time you power it up, after a little delay logs will start filling in from during your outage
+
+Zabbix
+
+https://bestmonitoringtools.com/how-to-install-zabbix-on-raspberry-pi-raspbian/
+
+sudo apt -y install zabbix-agent
+sudo vi /etc/zabbix/zabbix_agentd.conf
+sudo systemctl restart zabbix-agent 
+sudo systemctl enable zabbix-agent
