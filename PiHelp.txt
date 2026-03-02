@@ -1,3 +1,54 @@
+# SSH to the system
+# May require you to edit $home/.ssh/known_hosts to remove
+# lines associated with old hostname
+
+# Update system before installing Pihole
+sudo apt update
+sudo apt-get -y full-upgrade
+sudo init 6
+
+# Pihole install
+curl -sSL https://install.pi-hole.net | bash
+
+# Set Pihole passwd
+sudo pihole setpassword
+
+# Use PiHole Settings->Teleporter to restore if needed
+
+sudo pihole -g
+
+# Setting up SNMP
+
+sudo apt install snmp snmpd libsnmp-dev -y
+sudo systemctl enable snmpd
+# add IP to agentaddress in /etc/snmp/snmpd.conf
+# Get IP Address
+ifconfig
+sudo vi /etc/snmp/snmpd.conf
+# agentaddress  127.0.0.1,[::1],192.168.1.XXX
+sudo service snmpd stop
+sudo net-snmp-config --create-snmpv3-user -ro -A snmpauthpwd -X snmpprivpwd -a SHA -x AES snmpuser
+sudo service snmpd start
+
+# All done
+# Maybe restart again for final step
+
+# Cron
+0 2 * * * sudo apt update
+0 3 * * * sudo apt-get -y full-upgrade
+0 4 * * * sudo init 6
+0 5 * * * PATH="$PATH:/usr/sbin:/usr/local/bin/" pihole -up
+
+0 1 * * Mon sudo apt update
+0 2 * * Mon sudo apt-get -y full-upgrade
+0 3 * * Mon sudo init 6
+0 4 * * Mon sudo pihole -up
+0 5 * * Mon sudo pihole -g
+
+sudo apt update
+sudo apt full-upgrade
+sudo init 6
+
 # Make sure to use PiHole Settings->Teleporter for backup first
 
 # Raspberry pi Imager
@@ -13,43 +64,6 @@ sudo raspi-config
 system -> hostname
 reboot
 localisation options->timezone
-
-# Pihole install
-curl -sSL https://install.pi-hole.net | bash
-
-# Remove Pihole passwd
-sudo pihole setpassword
-
-# Use PiHole Settings->Teleporter to restore if needed
-
-# Uncomment cron from rsyslog.conf
-sudo vi /etc/rsyslog.conf
-
-# Cron
-0 2 * * * sudo apt update
-0 3 * * * sudo apt-get -y full-upgrade
-0 4 * * * sudo init 6
-0 5 * * * PATH="$PATH:/usr/sbin:/usr/local/bin/" pihole -up
-
-0 1 * * Mon sudo apt update
-0 2 * * Mon sudo apt-get -y full-upgrade
-0 3 * * Mon sudo init 6
-0 4 * * Mon sudo pihole -up
-0 5 * * Mon sudo pihole -g
-
-# Setting up SNMP
-
-sudo apt install snmp snmpd libsnmp-dev -y
-sudo systemctl enable snmpd
-# add IP to agentaddress in /etc/snmp/snmpd.conf
-# agentaddress  127.0.0.1,[::1],192.168.1.XXX
-sudo service snmpd stop
-sudo net-snmp-config --create-snmpv3-user -ro -A snmpauthpwd -X snmpprivpwd -a SHA -x AES snmpuser
-sudo service snmpd start
-
-sudo apt update
-sudo apt full-upgrade
-sudo init 6
 
 # Not needed by good to know
 # Nord SmartDNS servers
