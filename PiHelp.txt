@@ -33,6 +33,16 @@ sudo service snmpd start
 # All done
 # Maybe restart again for final step
 
+# Install PADD
+# replaced pihole -c 
+# for console display
+
+# wget -O padd.sh https://install.padd.sh
+# or 
+curl -sSL https://install.padd.sh -o padd.sh
+sudo chmod +x padd.sh
+# ./padd.sh
+
 # Cron
 0 2 * * * sudo apt update
 0 3 * * * sudo apt-get -y full-upgrade
